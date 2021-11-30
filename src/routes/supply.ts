@@ -29,8 +29,8 @@ const ethWeb3 = new Web3(
   )
 );
 
-export default async function MtgySupply(app: Application) {
-  app.get("/supply", async function supplyRoute(_: Request, res: Response) {
+export default async function OKLGSupply(app: Application) {
+  app.get("/total", async function totalRoute(_: Request, res: Response) {
     try {
       const bscContract = ERC20(bscWeb3, walletInfo.bsc.token);
       const ethContract = ERC20(ethWeb3, walletInfo.eth.token);
@@ -68,6 +68,7 @@ export default async function MtgySupply(app: Application) {
         const ethContract = ERC20(ethWeb3, walletInfo.eth.token);
         const [
           bscTotalSupply,
+          ethTotalSupply,
           bscDecimals,
           ethDecimals,
           bscBurnedAddyBal,
@@ -78,6 +79,7 @@ export default async function MtgySupply(app: Application) {
           ethBridgeWalletBal,
         ] = await Promise.all([
           bscContract.methods.totalSupply().call(),
+          ethContract.methods.totalSupply().call(),
           bscContract.methods.decimals().call(),
           ethContract.methods.decimals().call(),
           bscContract.methods.balanceOf(burnWallet).call(),
@@ -89,12 +91,13 @@ export default async function MtgySupply(app: Application) {
         ]);
         res.send(
           getBalance(bscTotalSupply, bscDecimals)
+            .plus(getBalance(ethTotalSupply, ethDecimals))
             .minus(getBalance(bscBurnedAddyBal, bscDecimals))
             .minus(getBalance(ethBurnedAddyBal, ethDecimals))
             .minus(getBalance(bscTreasuryWalletBal, bscDecimals))
-            .minus(getBalance(ethTreasuryWalletBal, bscDecimals))
+            .minus(getBalance(ethTreasuryWalletBal, ethDecimals))
             .minus(getBalance(bscBridgeWalletBal, bscDecimals))
-            .minus(getBalance(ethBridgeWalletBal, bscDecimals))
+            .minus(getBalance(ethBridgeWalletBal, ethDecimals))
             .toString()
         );
       } catch (err: any) {
@@ -104,6 +107,6 @@ export default async function MtgySupply(app: Application) {
   );
 }
 
-function getBalance(totalBal: number | string, decimals: number | string) {
-  return new BigNumber(totalBal).div(new BigNumber(10).pow(decimals));
+function getBalance(bal: number | string, decimals: number | string) {
+  return new BigNumber(bal).div(new BigNumber(10).pow(decimals));
 }
