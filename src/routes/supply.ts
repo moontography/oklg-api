@@ -8,12 +8,12 @@ assert(process.env.INFURA_API_KEY, "No Infura API key for ETH mainnet");
 
 const walletInfo: any = {
   bsc: {
-    bridge: "0x5A4682708c07176030Be725914947782AfE73036",
+    bridge: "0x3f0dD16553e33664Dc0256Ac58B84ec8E5cAa037",
     token: "0x55e8b37a3c43b049dedf56c77f462db095108651",
     treasury: "0xdb7014e9bc92d087ad7c096d9ff9940711015ec3",
   },
   eth: {
-    bridge: "0xBCD5e634897dFfb4C12397c881589c2D4230230a",
+    bridge: "0xd21cbf03Eb55935743098C73E6Eb3af85D20502A",
     token: "0x5dbb9f64cd96e2dbbca58d14863d615b67b42f2e",
     treasury: "0xdb3ac91239b79fae75c21e1f75a189b1d75dd906",
   },
