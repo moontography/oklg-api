@@ -2,26 +2,32 @@ import assert from "assert";
 import BigNumber from "bignumber.js";
 import { Application, NextFunction, Request, Response } from "express";
 import { Redis } from "ioredis";
+import Web3 from "web3";
 import { IRouteOptions } from ".";
-import CoinMarketCapApi from "../libs/CoinMarketCapApi";
-import DexUtils from "../libs/DexUtils";
+import DexUtilsContract from "../libs/DexUtilsContract";
+
+const dexUtils = "0x738f7a7D2F7aF556321fae259b37d49034827E09";
 
 assert(process.env.COIN_MARKET_CAP_API, "CMC Api key required");
-const cmcApi = CoinMarketCapApi(process.env.COIN_MARKET_CAP_API);
 
 export default async function Token(
   app: Application,
-  { log, redis }: IRouteOptions
+  { log, redis, bscWeb3, ethWeb3 }: IRouteOptions
 ) {
   app.get(
     "/token/price",
     async function tokenPrice(req: Request, res: Response, next: NextFunction) {
       try {
-        const { symbol }: any = req.query;
-        assert(symbol, "symbol must be provided");
+        const { network, token }: any = req.query;
+        assert(network, "network must be provided");
+        assert(network, "token must be provided");
 
         // await getAndCacheCMCIdMap(redis, symbol);
-        const price = await getTokenPrice(redis, symbol);
+        const price = await getTokenPrice(
+          redis,
+          network.toLowerCase() === "bsc" ? bscWeb3 : ethWeb3,
+          token
+        );
         res.json({ price });
       } catch (err) {
         console.error(`Error getting price`, err);
@@ -31,47 +37,28 @@ export default async function Token(
   );
 }
 
-// async function getAndCacheCMCIdMap(redis: Redis, symbol: string) {
-//   const cache = await redis.get(`token.${symbol}`);
-//   if (cache) return;
-
-//   const { data } = await cmcApi.idMap();
-//   const pipeline = redis.pipeline();
-//   data.forEach((token: any) =>
-//     pipeline.set(`token.${token.symbol.toLowerCase()}`, JSON.stringify(token))
-//   );
-//   await pipeline.exec();
-//   return data;
-// }
-
 async function getTokenPrice(
   redis: Redis,
-  symbol: string
+  web3: Web3,
+  token: string
 ): Promise<number | string> {
-  const cacheKey = `token.${symbol.toLowerCase()}.price`;
+  const cacheKey = `token.${token.toLowerCase()}.price`;
   const cachedPrice = await redis.get(cacheKey);
   if (cachedPrice) return cachedPrice;
 
-  const { data } = await cmcApi.tokenPrice(symbol);
-  const caseSensitiveSymbol = Object.keys(data)[0];
-  if (caseSensitiveSymbol.toLowerCase() !== symbol.toLowerCase())
-    throw new Error(`symbols do not match`);
-  let price =
-    data &&
-    data[caseSensitiveSymbol] &&
-    data[caseSensitiveSymbol].quote &&
-    data[caseSensitiveSymbol].quote.USD &&
-    data[caseSensitiveSymbol].quote.USD.price;
-
-  // TODO support falling back to another method(s) of getting price
-  if (!price || price == 0) {
-    const platform = data[caseSensitiveSymbol].platform;
-    if (platform && platform.symbol.toLowerCase() === "bnb") {
-      price = await DexUtils.getTokenPrice(platform.token_address);
+  const dexUtilsCont = DexUtilsContract(web3, dexUtils);
+  let price: number | string = 0;
+  try {
+    price = await dexUtilsCont.methods.getMainPriceViaNativePair(token).call();
+  } finally {
+    if (isNaN(Number(price)) || price == "NaN") {
+      price = 0;
     }
   }
 
-  const formattedPrice = new BigNumber(price).toFixed();
+  const formattedPrice = new BigNumber(price)
+    .div(new BigNumber(10).pow(18))
+    .toFixed();
   await redis.set(cacheKey, formattedPrice, "EX", 60 * 10); // 10 minute cache
   return formattedPrice;
 }

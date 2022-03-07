@@ -1,6 +1,7 @@
 import http from "http";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
+import Web3 from "web3";
 import log from "./logger";
 import redis from "./redis";
 import config from "./config";
@@ -8,6 +9,15 @@ import Routes from "./routes";
 
 const app = express();
 const server = new http.Server(app);
+
+const bscWeb3 = new Web3(
+  new Web3.providers.HttpProvider(`https://bsc-dataseed.binance.org`)
+);
+const ethWeb3 = new Web3(
+  new Web3.providers.HttpProvider(
+    `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
+  )
+);
 
 export default async function startServer(portToListenOn = config.server.port) {
   return await new Promise((resolve, reject) => {
@@ -18,7 +28,7 @@ export default async function startServer(portToListenOn = config.server.port) {
       app.set("trust proxy", 1);
       app.use(cors());
 
-      Routes(app, { log, redis });
+      Routes(app, { log, redis, bscWeb3, ethWeb3 });
 
       app.all("*", function fallbackRoute(req: Request, res: Response) {
         res.sendStatus(404);
