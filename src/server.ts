@@ -1,3 +1,4 @@
+import assert from "assert";
 import http from "http";
 import express, { Request, Response, NextFunction } from "express";
 import cors from "cors";
@@ -10,12 +11,15 @@ import Routes from "./routes";
 const app = express();
 const server = new http.Server(app);
 
+assert(process.env.GETBLOCK_API_KEY, "no API key for web3 RPCs");
 const bscWeb3 = new Web3(
-  new Web3.providers.HttpProvider(`https://bsc-dataseed.binance.org`)
+  new Web3.providers.HttpProvider(
+    `https://bsc.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
+  )
 );
 const ethWeb3 = new Web3(
   new Web3.providers.HttpProvider(
-    `https://mainnet.infura.io/v3/${process.env.INFURA_API_KEY}`
+    `https://eth.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
   )
 );
 

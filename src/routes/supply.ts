@@ -1,10 +1,7 @@
-import assert from "assert";
 import BigNumber from "bignumber.js";
 import { Application, Request, Response } from "express";
 import { IRouteOptions } from ".";
 import ERC20 from "../libs/ERC20";
-
-assert(process.env.INFURA_API_KEY, "No Infura API key for ETH mainnet");
 
 const walletInfo: any = {
   bsc: {
