@@ -43,6 +43,47 @@ export default async function Alpha(
     }
   );
 
+  app.get(
+    "/alpha/latest",
+    async function alphaLatest(
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) {
+      try {
+        const address: any = req.query.address;
+        const amount: any = req.query.amount || 30;
+        assert(address, "cannot validate without address");
+        const isValidated = await redis.get(getAlphaValidatedGet(address));
+        if (!isValidated) {
+          return res.status(403).json({
+            error: `You have not validated yourself as having access to this service yet.`,
+          });
+        }
+
+        const alphaStrings = await redis.lrange(
+          `OKLG_alpha_as_a_service`,
+          0,
+          amount
+        );
+        const alpha = alphaStrings
+          .map((str) => {
+            try {
+              return JSON.parse(str);
+            } catch (err) {
+              return null;
+            }
+          })
+          .filter((s) => !!s);
+
+        res.json({ alpha });
+      } catch (err) {
+        console.error(`Error validation signature`, err);
+        next(err);
+      }
+    }
+  );
+
   app.post(
     "/alpha/validate",
     async function alphaValidate(
@@ -113,7 +154,7 @@ export default async function Alpha(
           getAlphaValidatedGet(address),
           validated ? "true" : "false",
           "EX",
-          60 * 60 * 24 * 3
+          60 * 60 * 24 // 1 day
         );
 
         res.json({
