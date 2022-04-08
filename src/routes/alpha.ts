@@ -1,19 +1,21 @@
 import assert from "assert";
 import BigNumber from "bignumber.js";
 import { Application, NextFunction, Request, Response } from "express";
-import { Redis } from "ioredis";
 import { IRouteOptions } from ".";
 import ERC20 from "../libs/ERC20";
 import ERC721 from "../libs/ERC721";
+import HoneypotCheck from "../libs/HoneypotCheck";
 import OKLGRewardsDistributor from "../libs/OKLGRewardsDistributor";
 
 const walletInfo: any = {
   bsc: {
+    honeypot: "0x195A67439292E32B4E9482a04cD3d34373af095A",
     nft: "0x8d87c61e1Dd1351fbbC0026F478416B67E660726",
     token: "0x55e8b37a3c43b049dedf56c77f462db095108651",
     rewards: "0x6A67398C803aeFe4f7b6768d42EF76426bFe0F8d",
   },
   eth: {
+    honeypot: "0x1275263fDcDc721981FC7D13b632Db68C9229e8b",
     nft: "0xdAf531FD52eAa4B33a5158B0Da3305CaaAf96cD6",
     token: "0x5dbb9f64cd96e2dbbca58d14863d615b67b42f2e",
     rewards: "0x8b61F51F639ADf0d883F6b6E30f2C822B238fC2E",
@@ -164,6 +166,58 @@ export default async function Alpha(
         });
       } catch (err) {
         console.error(`Error validation signature`, err);
+        next(err);
+      }
+    }
+  );
+
+  app.get(
+    "/alpha/honeypot/check/:network/:contract",
+    async function alphaValidated(
+      req: Request,
+      res: Response,
+      next: NextFunction
+    ) {
+      try {
+        const { contract, network }: any = req.params;
+        assert(contract, "no contract to validate");
+        assert(network, "no network provided");
+        const honeypot =
+          network.toLowerCase() === "bsc"
+            ? HoneypotCheck(bscWeb3, walletInfo.bsc.honeypot)
+            : HoneypotCheck(ethWeb3, walletInfo.eth.honeypot);
+
+        const canBuyAndSell = async function canBuyAndSell(
+          tokenContract: string,
+          slippage?: number | string
+        ): Promise<boolean> {
+          try {
+            const estObj = { value: bscWeb3.utils.toWei("0.01", "ether") };
+            // ignore slippage
+            const removeSlippage = honeypot.methods.buyThenSellSingleSlippage(
+              tokenContract,
+              100
+            );
+            await removeSlippage.estimateGas(estObj);
+
+            // with provided slippage
+            if (slippage && new BigNumber(slippage).lt(100)) {
+              const withSlippage = honeypot.methods.buyThenSellSingleSlippage(
+                tokenContract,
+                slippage
+              );
+              await withSlippage.estimateGas(estObj);
+            }
+            return true;
+          } catch (err) {
+            log.error(`Error checking buy/sell`, err);
+            return false;
+          }
+        };
+
+        res.json({ canBuyAndSell: await canBuyAndSell(contract, 50) });
+      } catch (err) {
+        log.error(`Error checking contract`, err);
         next(err);
       }
     }
