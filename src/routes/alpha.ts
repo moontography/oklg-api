@@ -179,7 +179,7 @@ export default async function Alpha(
       next: NextFunction
     ) {
       try {
-        const { contract, network }: any = req.params;
+        const { contract, network, slippage }: any = req.params;
         assert(contract, "no contract to validate");
         assert(network, "no network provided");
         const honeypot =
@@ -215,7 +215,9 @@ export default async function Alpha(
           }
         };
 
-        res.json({ canBuyAndSell: await canBuyAndSell(contract, 50) });
+        res.json({
+          canBuyAndSell: await canBuyAndSell(contract, slippage || 50),
+        });
       } catch (err) {
         log.error(`Error checking contract`, err);
         next(err);
