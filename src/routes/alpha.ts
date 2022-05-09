@@ -172,7 +172,7 @@ export default async function Alpha(
   );
 
   app.get(
-    "/alpha/honeypot/check/:network/:contract",
+    "/alpha/honeypot/check/:network/:contract/:slippage",
     async function alphaValidated(
       req: Request,
       res: Response,
