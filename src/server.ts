@@ -13,10 +13,13 @@ const server = new http.Server(app);
 
 assert(process.env.GETBLOCK_API_KEY, "no API key for web3 RPCs");
 const bscWeb3 = new Web3(
-  new Web3.providers.HttpProvider(
-    `https://bsc.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
-  )
+  new Web3.providers.HttpProvider(`https://bsc-dataseed.binance.org`)
 );
+// const bscWeb3 = new Web3(
+//   new Web3.providers.HttpProvider(
+//     `https://bsc.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
+//   )
+// );
 const ethWeb3 = new Web3(
   new Web3.providers.HttpProvider(
     `https://eth.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
