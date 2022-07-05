@@ -25,9 +25,14 @@ const bscWeb3 = new Web3(
 //     `https://eth.getblock.io/mainnet/?api_key=${process.env.GETBLOCK_API_KEY}`
 //   )
 // );
+// const ethWeb3 = new Web3(
+//   new Web3.providers.HttpProvider(
+//     `https://apis-sj.ankr.com/3e7d0b7b3bdc4ddc8e919dc3e98a2481/${process.env.ANKR_API_KEY}/eth/fast/main`
+//   )
+// );
 const ethWeb3 = new Web3(
   new Web3.providers.HttpProvider(
-    `https://apis-sj.ankr.com/3e7d0b7b3bdc4ddc8e919dc3e98a2481/${process.env.ANKR_API_KEY}/eth/fast/main`
+    `https://eth-mainnet.alchemyapi.io/v2/${process.env.ALCHEMY_API_KEY}`
   )
 );
 
